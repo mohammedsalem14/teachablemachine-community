@@ -1,45 +1,32 @@
-```python
-from keras.models import load_model  # TensorFlow is required for Keras to work
-from PIL import Image, ImageOps  # Install pillow instead of PIL
-import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 
-# Disable scientific notation for clarity
-np.set_printoptions(suppress=True)
+# Define the model
+model = Sequential([
+    Conv2D(32, (3, 3), activation='relu', input_shape=(224, 224, 3)),
+    MaxPooling2D((2, 2)),
+    Conv2D(64, (3, 3), activation='relu'),
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dense(1, activation='sigmoid')  # Binary classification
+])
 
-# Load the model
-model = load_model("keras_Model.h5", compile=False)
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Load the labels
-class_names = open("labels.txt", "r").readlines()
+# Train the model
+model.fit(train_data, epochs=10, validation_data=val_data)
 
-# Create the array of the right shape to feed into the keras model
-# The 'length' or number of images you can put into the array is
-# determined by the first position in the shape tuple, in this case 1
-data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+# Evaluate the model
+loss, accuracy = model.evaluate(test_data)
+print('Test accuracy:', accuracy)
 
-# Replace this with the path to your image
-image = Image.open("<IMAGE_PATH>").convert("RGB")
-
-# resizing the image to be at least 224x224 and then cropping from the center
-size = (224, 224)
-image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
-
-# turn the image into a numpy array
-image_array = np.asarray(image)
-
-# Normalize the image
-normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
-
-# Load the image into the array
-data[0] = normalized_image_array
-
-# Predicts the model
-prediction = model.predict(data)
-index = np.argmax(prediction)
-class_name = class_names[index]
-confidence_score = prediction[0][index]
-
-# Print prediction and confidence score
-print("Class:", class_name[2:], end="")
-print("Confidence Score:", confidence_score)
-```
+# Make a prediction
+new_image = load_and_preprocess_image('path/to/new_image.jpg')
+prediction = model.predict(new_image)
+if prediction > 0.5:
+    print('Predicted class: Dog')
+else:
+    print('Predicted class: Cat')
